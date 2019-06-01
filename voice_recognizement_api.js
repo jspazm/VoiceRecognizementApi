@@ -1,25 +1,27 @@
 var isEnabled = false;
 var noteContent = '';
-var noteTextarea;
+var noteTextarea = null;
 var getId;
 var areaById;
+var showNoticeStart = 0;
+var SpeechRecognition;
+var recognition;
 
-
-try {
-    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    var recognition = new SpeechRecognition();
-}catch(e){
-    console.error(e);
-    alert("TU NAVEGADOR NO SOPORTA LA FUNCION DE RECONOCIMIENTO DE VOZ.\n\
-\n POR FAVOR, INSTALA EL NAVEGADOR GOOGLE CHROME PARA HABILITARLA");
-}
+    try {
+        SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+    } catch (e) {
+        console.error(e);
+        alert("TU NAVEGADOR NO SOPORTA LA FUNCION DE RECONOCIMIENTO DE VOZ.\n\
+\n POR FAVOR, USA EL NAVEGADOR GOOGLE CHROME PARA HABILITARLA");
+    }  
 /* 
  * SINTESIS DE TEXTO
  * */
 
 function initializeAPI(){
     
-recognition.continuous = false;
+recognition.continuous = true;
 
 recognition.onresult = function(event) {
 
@@ -31,39 +33,57 @@ recognition.onresult = function(event) {
 
   if(!mobileRepeatBug) {
     noteContent += transcript;
-    noteTextarea.val(noteContent);
+    noteTextarea.val(noteContent.toUpperCase());
   }
 };
-
 }
 
 
 
 $('#btnVcRec').on('click', function(e){
-   if (isEnabled != true){
-        isEnabled = true;
+
+
+    if (isEnabled != true && noteTextarea != null){
+          
         if (noteContent.length) {
             noteContent += '. ';
-        }           
+        }
+        if (showNoticeStart == 0){
+            var r = confirm ("¿Desea activar la transcripción de voz a Texto?");
+            if (r == true){
+                alert("POR FAVOR, HABLA CLARO Y CONCISO PARA QUE EL SISTEMA HAGA EFECTIVA LA TRANSCRIPCIÓN POR RECONOCIMIENTO DE VOZ.")
+                showNoticeStart = 1;
+                
+            }else{
+                return;
+            }
+        }
+        isEnabled = true;
         initializeAPI();
-        alert("POR FAVOR, HABLA CLARO Y CONCISO PARA QUE EL SISTEMA HAGA \n\n\
-        EFECTIVA LA TRANSCRIPCIÓN POR RECONOCIMIENTO DE VOZ.");
-        recognition.start(); 
-   }else{
-       isEnabled = false;
+        recognition.start();
+        btnVcRec.innerHTML = '<img src="resources/img/cargando.gif" width="20" height="20" />'; 
+        
+   }else if (isEnabled !== false){
+       btnVcRec.innerHTML = '<i class="icon-bullhorn"></i>';
        recognition.stop();
+       isEnabled = false;
+    }else{
+       alert("POR FAVOR, SELECCIONA UN CAMPO DE TEXTO PARA TRANSCRIBIR VOZ A TEXTO.");
+       
    }
 });
 
-recognition.onspeechend = function() {
-  isEnabled = false;
-  if (!noteContent.length)
-    noteContent= '';
-};
 
-$('textarea').on('click', function() {
-   getId = $(this).attr('id');
-   noteTextarea = $('#'+ getId);
-   noteContent = noteTextarea.val();
-   
-});
+function initTextAreas(){
+    $('textarea').on('click', function() {
+        getId = $(this).attr('id');
+        noteTextarea = $('#'+ getId);
+        noteContent = noteTextarea.val();
+    });
+}
+recognition.onspeechend = function() {
+    isEnabled = false;
+    if (!noteContent.length)
+        noteContent= '';
+    btnVcRec.innerHTML = '<i class="icon-bullhorn"></i>';
+};
